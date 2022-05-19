@@ -1,13 +1,30 @@
 <template>
   <div class="hello">
-    <Button-ok :msg="'ssssss'" :flag="true"> </Button-ok>
+    <Button-ok :msg="$t('button.test')" :flag="true" @openDialog="openDialog()">
+    </Button-ok>
+    <BaseDialog :active.sync="isActive" @closeDialog="close()"> </BaseDialog>
+    <button type="button" @click="openDialog()">Toggle</button>
   </div>
 </template>
 
 <script>
 import ButtonOk from "../components/Button.vue";
+import BaseDialog from "../components/BaseModalDialog.vue";
 export default {
-  components: { ButtonOk },
+  components: { ButtonOk, BaseDialog },
+  data() {
+    return {
+      isActive: false,
+    };
+  },
+  methods: {
+    openDialog() {
+      this.isActive = true;
+    },
+    close() {
+      this.isActive = false;
+    },
+  },
 };
 </script>
 

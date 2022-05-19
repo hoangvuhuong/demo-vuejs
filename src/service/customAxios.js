@@ -1,66 +1,37 @@
 import axios from "axios";
-import AuthenService from "./AuthenService";
-import Utils from "@/utils/Utils";
 
-export default (isPublic = false) => {
-  let baseURL =
-    process.env.VUE_APP_HOST +
-    ":" +
-    process.env.VUE_APP_PORT +
-    process.env.VUE_APP_CONTEXT_PATH;
-  let lang = localStorage.getItem("lang");
-  if (!lang) lang = "vi";
-  let headers = {
-    "Accept-Language": lang,
-    Accept: "application/json, application/pdf",
-    "Content-Type": "application/json",
-  };
-  if (isPublic) {
-    return axios.create({
-      baseURL,
-      headers,
-    });
-  }
-  let refreshToken = Utils.getRefreshToken();
+export default () => {
+  var lang = localStorage.getItem("lang");
+  var jwt = localStorage.getItem("jwt");
+  // var jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMzY3ODE5MTcxIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.ujIsY8wK37PozZttq-QOxhVj3FdeHUE9WM6z2x0PSBQ';
+
+  if (!lang)
+    lang = 'vi';
 
   let customAxios = axios.create({
-    baseURL,
-    headers,
+    baseURL: process.env.VUE_APP_HOST + ':' + process.env.VUE_APP_PORT + process.env.VUE_APP_CONTEXT_PATH,
+    headers: {
+      "Accept-Language": lang,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      "Authorization": `Bearer ${jwt}`
+    },
   });
 
-  customAxios.interceptors.request.use(
-    (config) => {
-      const accessToken = Utils.getAccessToken();
-      if (accessToken) {
-        config.headers["Authorization"] = `Bearer ${accessToken}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
-
   customAxios.interceptors.response.use(
-    (res) => res,
-    async (err) => {
-      const originalConfig = err.config;
+    res => res,
+    err => {
       const status = err.response?.status || 500;
-      if (status === 401 && !originalConfig._retry) {
-        originalConfig._retry = true;
-        try {
-          let res = await AuthenService.refreshToken({
-            refreshToken: refreshToken,
-          });
-          let accessToken = res.data?.data?.accessToken;
-          Utils.setAccessToken(accessToken);
-        } catch (error) {
-          localStorage.clear();
+      switch (status) {
+        case 401:
+          window.location.href = "/login"
+          break;
+        case 403:
+          window.location.href = "/dashboard"
+          break;
+        default:
           throw err;
-        }
-        return customAxios(originalConfig);
       }
-      throw err;
     }
   );
   return customAxios;
